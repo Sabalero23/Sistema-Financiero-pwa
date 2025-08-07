@@ -1,0 +1,327 @@
+# .htaccess - Configuración optimizada para Sistema Financiero PWA
+
+# ==========================================
+# CONFIGURACIÓN BÁSICA
+# ==========================================
+RewriteEngine On
+DirectoryIndex index.php
+Options -Indexes
+
+# ==========================================
+# REDIRECCIONAMIENTO HTTPS (PRODUCCIÓN)
+# ==========================================
+# Descomentar estas líneas en producción
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ==========================================
+# CONFIGURACIÓN PWA
+# ==========================================
+
+# Service Worker - Debe servirse con HTTPS en producción
+<Files "sw.js">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+    Header set Service-Worker-Allowed "/"
+</Files>
+
+# Manifest.json - MIME type correcto
+<Files "manifest.json">
+    Header set Content-Type "application/manifest+json"
+    Header set Cache-Control "public, max-age=604800"
+</Files>
+
+# ==========================================
+# HEADERS DE SEGURIDAD
+# ==========================================
+<IfModule mod_headers.c>
+    # Headers de seguridad básicos
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy básico (ajustar según necesidades)
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; media-src 'self'"
+    
+    # Headers para PWA
+    Header always set Cross-Origin-Embedder-Policy "unsafe-none"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+</IfModule>
+
+# ==========================================
+# PROTECCIÓN DE ARCHIVOS SENSIBLES
+# ==========================================
+
+# Proteger archivos de configuración PHP
+<FilesMatch "\.(php|inc)$">
+    <RequireAll>
+        Require all denied
+        # Permitir solo archivos específicos
+        <Files "index.php">
+            Require all granted
+        </Files>
+        <Files "login.php">
+            Require all granted
+        </Files>
+        <Files "api.php">
+            Require all granted
+        </Files>
+        <Files "api_fixed.php">
+            Require all granted
+        </Files>
+        <Files "auth.php">
+            Require all granted
+        </Files>
+        <Files "setup.php">
+            Require all granted
+        </Files>
+        <Files "user_management.php">
+            Require all granted
+        </Files>
+        <Files "test_voice.php">
+            Require all granted
+        </Files>
+        <Files "offline.html">
+            Require all granted
+        </Files>
+    </RequireAll>
+</FilesMatch>
+
+# Denegar acceso directo a archivos críticos
+<Files "database.php">
+    Require all denied
+</Files>
+
+<Files "config_headers.php">
+    Require all denied
+</Files>
+
+# Proteger archivos de backup y temporales
+<FilesMatch "\.(bak|backup|old|tmp|temp|sql|log)$">
+    Require all denied
+</FilesMatch>
+
+# Proteger archivos de sistema
+<Files ".htaccess">
+    Require all denied
+</Files>
+
+<Files ".env">
+    Require all denied
+</Files>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# ==========================================
+# CONFIGURACIÓN DE CACHE
+# ==========================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Archivos estáticos de la PWA
+    ExpiresByType application/manifest+json "access plus 1 week"
+    
+    # Iconos y imágenes
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS y JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Fuentes
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    
+    # HTML - cache corto para actualizaciones
+    ExpiresByType text/html "access plus 1 hour"
+    
+    # API - sin cache
+    ExpiresByType application/json "no-cache"
+</IfModule>
+
+# ==========================================
+# COMPRESIÓN GZIP
+# ==========================================
+<IfModule mod_deflate.c>
+    # Comprimir archivos de texto
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/atom_xml
+    AddOutputFilterByType DEFLATE application/manifest+json
+</IfModule>
+
+# ==========================================
+# RUTAS AMIGABLES (OPCIONAL)
+# ==========================================
+
+# Redireccionar rutas comunes
+RewriteRule ^home/?$ index.php [L]
+RewriteRule ^dashboard/?$ index.php [L]
+RewriteRule ^admin/?$ user_management.php [L]
+
+# API endpoints con versioning
+RewriteRule ^api/v1/(.*)$ api_fixed.php [L,QSA]
+RewriteRule ^api/(.*)$ api_fixed.php [L,QSA]
+
+# Páginas sin extensión .php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([^.]+)$ $1.php [L]
+
+# ==========================================
+# CONFIGURACIÓN DE ERRORES
+# ==========================================
+
+# Páginas de error personalizadas
+ErrorDocument 404 /offline.html
+ErrorDocument 500 /offline.html
+ErrorDocument 403 /login.php
+
+# ==========================================
+# LÍMITES Y OPTIMIZACIÓN
+# ==========================================
+
+# Límites de subida para PHP
+<IfModule mod_php7.c>
+    php_value upload_max_filesize "10M"
+    php_value post_max_size "10M"
+    php_value max_execution_time "30"
+    php_value max_input_time "30"
+</IfModule>
+
+<IfModule mod_php8.c>
+    php_value upload_max_filesize "10M"
+    php_value post_max_size "10M" 
+    php_value max_execution_time "30"
+    php_value max_input_time "30"
+</IfModule>
+
+# Límite de requests por IP (básico)
+<IfModule mod_evasive24.c>
+    DOSHashTableSize    30000
+    DOSPageCount        10
+    DOSPageInterval     1
+    DOSSiteCount        50
+    DOSSiteInterval     1
+    DOSBlockingPeriod   600
+</IfModule>
+
+# ==========================================
+# HEADERS ADICIONALES PARA PWA
+# ==========================================
+<IfModule mod_headers.c>
+    # Para archivos de la PWA
+    <FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Para el Service Worker
+    <Files "sw.js">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Service-Worker-Allowed "/"
+    </Files>
+    
+    # Para páginas PHP
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    
+    # Headers específicos para API
+    <Files "api.php">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE"
+        Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    </Files>
+    
+    <Files "api_fixed.php">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS, PUT, DELETE"
+        Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    </Files>
+</IfModule>
+
+# ==========================================
+# CONFIGURACIÓN ESPECIAL PARA DESARROLLO
+# ==========================================
+
+# Descomentar en desarrollo local
+# RewriteCond %{HTTP_HOST} ^(localhost|127\.0\.0\.1)
+# RewriteRule .* - [E=DEV:1]
+# Header always set X-Development-Mode "true" env=DEV
+
+# ==========================================
+# LOGS Y DEBUGGING (SOLO DESARROLLO)
+# ==========================================
+
+# Para debug en desarrollo - COMENTAR EN PRODUCCIÓN
+# LogLevel info rewrite:trace3
+# RewriteLogLevel 3
+
+# ==========================================
+# CONFIGURACIÓN FINAL
+# ==========================================
+
+# Asegurar que los archivos importantes sean accesibles
+<Files "index.php">
+    Require all granted
+</Files>
+
+<Files "login.php">
+    Require all granted
+</Files>
+
+<Files "manifest.json">
+    Require all granted
+</Files>
+
+<Files "sw.js">
+    Require all granted
+</Files>
+
+<Files "offline.html">
+    Require all granted
+</Files>
+
+# Favicon
+<Files "favicon.ico">
+    Require all granted
+    ExpiresDefault "access plus 1 year"
+</Files>
+
+# Directorio de iconos
+<Directory "icons">
+    Require all granted
+    ExpiresDefault "access plus 1 year"
+</Directory>
+
+# Forzar HTTPS - Descomenta estas líneas
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# También agregar:
+RewriteCond %{HTTP_HOST} !^www\. [NC]
+RewriteRule ^(.*)$ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

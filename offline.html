@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin Conexión - Sistema Financiero</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .offline-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .offline-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .offline-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .offline-message {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        .offline-features {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .offline-features h3 {
+            color: #4CAF50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .offline-features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .offline-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+        }
+
+        .offline-features li:last-child {
+            border-bottom: none;
+        }
+
+        .offline-features li::before {
+            content: "✅";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+        }
+
+        .connection-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .cached-data {
+            background: #e7f3ff;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .cached-data h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .sync-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .offline-title {
+                font-size: 1.5em;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+
+        .network-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .footer-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="network-indicator" id="networkIndicator">
+        🔴 Sin conexión
+    </div>
+
+    <div class="offline-container">
+        <div class="offline-icon">📱💰</div>
+        
+        <h1 class="offline-title">Modo Offline</h1>
+        
+        <p class="offline-message">
+            No hay conexión a internet, pero tu Sistema Financiero sigue funcionando con las características offline.
+        </p>
+
+        <div class="offline-features">
+            <h3>🚀 Disponible Offline</h3>
+            <ul>
+                <li>Ver transacciones guardadas localmente</li>
+                <li>Crear nuevas transacciones (se sincronizarán)</li>
+                <li>Usar reconocimiento de voz</li>
+                <li>Consultar estadísticas</li>
+                <li>Navegar por la interfaz completa</li>
+            </ul>
+        </div>
+
+        <div class="connection-status status-offline" id="connectionStatus">
+            🔴 Sin conexión a internet
+        </div>
+
+        <div class="cached-data" id="cachedData" style="display: none;">
+            <h4>📦 Datos Guardados Localmente</h4>
+            <p>Transacciones en cache: <span id="cachedCount">0</span></p>
+            <p>Última sincronización: <span id="lastSync">Nunca</span></p>
+        </div>
+
+        <div class="sync-status" id="syncStatus">
+            <div class="loading"></div>
+            <span>Sincronizando datos cuando vuelva la conexión...</span>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button class="btn" onclick="tryReconnect()">
+                🔄 Intentar Reconectar
+            </button>
+            
+            <button class="btn btn-secondary" onclick="goOfflineMode()">
+                📱 Continuar Offline
+            </button>
+        </div>
+
+        <div class="footer-info">
+            <p><strong>💡 Consejos Offline:</strong></p>
+            <p>• Tus datos se guardan localmente y seguro</p>
+            <p>• Se sincronizarán automáticamente al reconectar</p>
+            <p>• El reconocimiento de voz funciona completamente offline</p>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let isOnline = navigator.onLine;
+        let syncInProgress = false;
+        let offlineData = [];
+
+        // Inicializar página offline
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Offline page loaded');
+            updateConnectionStatus();
+            loadOfflineData();
+            setupEventListeners();
+            checkServiceWorker();
+        });
+
+        // Configurar event listeners
+        function setupEventListeners() {
+            // Detectar cambios de conectividad
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+            
+            // Escuchar mensajes del service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', handleSWMessage);
+            }
+            
+            // Auto-retry cada 30 segundos cuando offline
+            setInterval(() => {
+                if (!isOnline) {
+                    checkConnectivity();
+                }
+            }, 30000);
+        }
+
+        // Manejar cuando vuelve la conexión
+        function handleOnline() {
+            console.log('✅ Connection restored');
+            isOnline = true;
+            updateConnectionStatus();
+            
+            // Intentar sincronizar automáticamente
+            setTimeout(() => {
+                attemptSync();
+            }, 1000);
+        }
+
+        // Manejar cuando se pierde la conexión
+        function handleOffline() {
+            console.log('❌ Connection lost');
+            isOnline = false;
+            updateConnectionStatus();
+            
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.style.display = 'none';
+        }
+
+        // Actualizar indicador de estado de conexión
+        function updateConnectionStatus() {
+            const statusEl = document.getElementById('connectionStatus');
+            const indicatorEl = document.getElementById('networkIndicator');
+            
+            if (isOnline) {
+                statusEl.className = 'connection-status status-online';
+                statusEl.innerHTML = '🟢 Conectado a internet';
+                indicatorEl.innerHTML = '🟢 En línea';
+                indicatorEl.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            } else {
+                statusEl.className = 'connection-status status-offline';
+                statusEl.innerHTML = '🔴 Sin conexión a internet';
+                indicatorEl.innerHTML = '🔴 Sin conexión';
+                indicatorEl.style.background = 'linear-gradient(135deg, #dc3545, #e83e8c)';
+            }
+        }
+
+        // Verificar conectividad real
+        async function checkConnectivity() {
+            try {
+                const response = await fetch('/api.php?action=ping', {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    signal: AbortSignal.timeout(5000)
+                });
+                
+                if (response.ok) {
+                    if (!isOnline) {
+                        handleOnline();
+                    }
+                    return true;
+                }
+            } catch (error) {
+                console.log('Connectivity check failed:', error);
+            }
+            
+            if (isOnline) {
+                handleOffline();
+            }
+            return false;
+        }
+
+        // Intentar reconectar manualmente
+        async function tryReconnect() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading"></div> Conectando...';
+            
+            try {
+                const connected = await checkConnectivity();
+                
+                if (connected) {
+                    btn.innerHTML = '✅ ¡Conectado!';
+                    btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/index.php';
+                    }, 1500);
+                } else {
+                    btn.innerHTML = '❌ Sin conexión';
+                    btn.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+                    
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        btn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Reconnect failed:', error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Continuar en modo offline
+        function goOfflineMode() {
+            // Redirigir a la app principal (funcionará en modo offline)
+            window.location.href = '/index.php?offline=true';
+        }
+
+        // Cargar datos offline del localStorage
+        function loadOfflineData() {
+            try {
+                const cached = localStorage.getItem('offline_transactions');
+                const lastSync = localStorage.getItem('last_sync');
+                
+                if (cached) {
+                    offlineData = JSON.parse(cached);
+                    
+                    const cachedDataEl = document.getElementById('cachedData');
+                    const cachedCountEl = document.getElementById('cachedCount');
+                    const lastSyncEl = document.getElementById('lastSync');
+                    
+                    if (offlineData.length > 0) {
+                        cachedDataEl.style.display = 'block';
+                        cachedCountEl.textContent = offlineData.length;
+                        
+                        if (lastSync) {
+                            const syncDate = new Date(parseInt(lastSync));
+                            lastSyncEl.textContent = syncDate.toLocaleString('es-ES');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading offline data:', error);
+            }
+        }
+
+        // Intentar sincronizar datos pendientes
+        async function attemptSync() {
+            if (syncInProgress || !isOnline) return;
+            
+            const pendingTransactions = getPendingTransactions();
+            if (pendingTransactions.length === 0) return;
+            
+            syncInProgress = true;
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.style.display = 'block';
+            
+            try {
+                console.log('🔄 Starting sync of', pendingTransactions.length, 'transactions');
+                
+                let syncedCount = 0;
+                const errors = [];
+                
+                for (const transaction of pendingTransactions) {
+                    try {
+                        const response = await fetch('/api.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                action: 'crear_transaccion',
+                                datos: transaction.data
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            removePendingTransaction(transaction.id);
+                            syncedCount++;
+                            console.log('✅ Synced transaction:', transaction.id);
+                        } else {
+                            errors.push(`Transaction ${transaction.id}: ${result.message}`);
+                        }
+                    } catch (error) {
+                        errors.push(`Transaction ${transaction.id}: ${error.message}`);
+                        console.error('❌ Sync error:', error);
+                    }
+                }
+                
+                // Actualizar UI con resultados
+                if (syncedCount > 0) {
+                    syncStatus.innerHTML = `✅ ${syncedCount} transacciones sincronizadas`;
+                    syncStatus.style.background = '#d4edda';
+                    syncStatus.style.color = '#155724';
+                    
+                    // Actualizar última sincronización
+                    localStorage.setItem('last_sync', Date.now().toString());
+                    loadOfflineData();
+                    
+                    setTimeout(() => {
+                        syncStatus.style.display = 'none';
+                    }, 3000);
+                }
+                
+                if (errors.length > 0) {
+                    console.warn('⚠️ Sync errors:', errors);
+                }
+                
+            } catch (error) {
+                console.error('❌ Sync failed:', error);
+                syncStatus.innerHTML = '❌ Error en sincronización';
+                syncStatus.style.background = '#f8d7da';
+                syncStatus.style.color = '#721c24';
+                
+                setTimeout(() => {
+                    syncStatus.style.display = 'none';
+                }, 5000);
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        // Obtener transacciones pendientes de sincronización
+        function getPendingTransactions() {
+            try {
+                const pending = localStorage.getItem('pending_transactions');
+                return pending ? JSON.parse(pending) : [];
+            } catch (error) {
+                console.error('Error getting pending transactions:', error);
+                return [];
+            }
+        }
+
+        // Eliminar transacción sincronizada
+        function removePendingTransaction(transactionId) {
+            try {
+                const pending = getPendingTransactions();
+                const updated = pending.filter(t => t.id !== transactionId);
+                localStorage.setItem('pending_transactions', JSON.stringify(updated));
+                
+                // Actualizar contador de cache
+                loadOfflineData();
+            } catch (error) {
+                console.error('Error removing pending transaction:', error);
+            }
+        }
+
+        // Manejar mensajes del service worker
+        function handleSWMessage(event) {
+            const { type, data } = event.data;
+            
+            switch (type) {
+                case 'SYNC_COMPLETE':
+                    console.log('📡 Service Worker sync complete');
+                    loadOfflineData();
+                    break;
+                    
+                case 'CACHE_UPDATED':
+                    console.log('💾 Cache updated by Service Worker');
+                    break;
+                    
+                case 'SYNC_ERROR':
+                    console.error('❌ Service Worker sync error:', data);
+                    break;
+            }
+        }
+
+        // Verificar estado del service worker
+        function checkServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    console.log('✅ Service Worker ready');
+                    
+                    // Solicitar información sobre el cache
+                    registration.active.postMessage({
+                        type: 'GET_VERSION'
+                    });
+                }).catch(error => {
+                    console.error('❌ Service Worker not ready:', error);
+                });
+            } else {
+                console.warn('⚠️ Service Worker not supported');
+            }
+        }
+
+        // Función para instalar la PWA (si está disponible)
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('💾 PWA install prompt available');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Mostrar botón de instalación personalizado
+            showInstallButton();
+        });
+
+        function showInstallButton() {
+            const installBtn = document.createElement('button');
+            installBtn.className = 'btn';
+            installBtn.innerHTML = '📱 Instalar App';
+            installBtn.onclick = installPWA;
+            
+            const container = document.querySelector('.offline-container');
+            container.appendChild(installBtn);
+        }
+
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            console.log('PWA install outcome:', outcome);
+            deferredPrompt = null;
+        }
+
+        // Diagnóstico del sistema offline
+        function runOfflineDiagnostic() {
+            const diagnostic = {
+                serviceWorker: 'serviceWorker' in navigator,
+                caches: 'caches' in window,
+                indexedDB: 'indexedDB' in window,
+                localStorage: 'localStorage' in window,
+                notifications: 'Notification' in window,
+                backgroundSync: 'serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype,
+                pushNotifications: 'serviceWorker' in navigator && 'PushManager' in window,
+                connectivity: navigator.onLine,
+                pendingTransactions: getPendingTransactions().length,
+                cachedTransactions: offlineData.length
+            };
+            
+            console.log('🔍 Offline Diagnostic:', diagnostic);
+            return diagnostic;
+        }
+
+        // Exportar funciones para debugging
+        window.offlineDebug = {
+            checkConnectivity,
+            loadOfflineData,
+            attemptSync,
+            runOfflineDiagnostic,
+            getPendingTransactions
+        };
+
+        // Mostrar información de debug en desarrollo
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            setTimeout(() => {
+                console.log('🔍 Development mode - Offline diagnostic:', runOfflineDiagnostic());
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
